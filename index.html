@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="./styles/style.css">
+    <script src="https://cdn.socket.io/socket.io-3.0.1.min.js"></script>
+    <script src = "jquery-3.5.1.js"></script>
+    <title>Крестики-нолики</title>
+</head>
+<body>
+    <div id = "field">
+        <div id = "row1">
+            <div id = "f1" onclick="clickOnSquare(1)"></div>
+            <div id = "f2" onclick="clickOnSquare(2)"></div>
+            <div id = "f3" onclick="clickOnSquare(3)"></div>
+        </div>
+        <div id = "row2">
+            <div id = "f4" onclick="clickOnSquare(4)"></div>
+            <div id = "f5" onclick="clickOnSquare(5)"></div>
+            <div id = "f6" onclick="clickOnSquare(6)"></div>
+        </div>
+        <div id = "row3">
+            <div id = "f7" onclick="clickOnSquare(7)"></div>
+            <div id = "f8" onclick="clickOnSquare(8)"></div>
+            <div id = "f9" onclick="clickOnSquare(9)"></div>
+        </div>
+    </div>
+    <div class = "buttonPanel">
+        <input type = "text" id = "roomNumber" placeholder="Введите номер игровой комнаты"/>
+        <input type = "button" id = "startGame" value = "Начать игру" onclick="startGame()"/>
+    </div>
+    <script>
+        let isMyMove = true;
+        let socket = io.connect('http://localhost:3456');
+
+        socket.on("newMove",function (data){
+            $(`#f${data}`).html("<p class = 'sign'>0</p>");
+            isMyMove = true;
+            checkingForEndTheGame(false);
+        })
+
+        function checkingForEndTheGame(isMyMove){
+            if(($("#f1").html() == $("#f2").html() && $("#f2").html() == $("#f3").html() && $("#f1").html()!="") ||
+            ($("#f4").html() == $("#f5").html() && $("#f5").html() == $("#f6").html() && $("#f4").html()!="") ||
+            ($("#f7").html() == $("#f8").html() && $("#f8").html() == $("#f9").html() && $("#f7").html()!="") ||
+            ($("#f1").html() == $("#f5").html() && $("#f5").html() == $("#f9").html() && $("#f1").html()!="") ||
+            ($("#f3").html() == $("#f5").html() && $("#f5").html() == $("#f7").html()) && $("#f3").html()!=""){
+                alert("Игра окончена!\n"+((isMyMove)?"Вы выиграли!":"Вы проиграли!"));
+                isMyMove = true;
+                $("#startGame").val("Начать игру")
+                $("#roomNumber").val("")
+                $("#startGame").attr('disabled', false);
+                $("#roomNumber").attr('disabled', false);
+                for(let i = 1; i < 10;i++){
+                    $(`#f${i}`).html("");
+                }
+            }
+        }
+
+        function clickOnSquare(e){
+            if($("#roomNumber").val()==""){
+                return alert("Вы не ввели номер игровой комнаты!");
+            }
+            if(isMyMove && $(`#f${e}`).html() == ""){
+                $(`#f${e}`).html("<p class = 'sign'>x</p>");
+                isMyMove = false;
+                socket.emit('makeMove',{square:e,roomNumber:$("#roomNumber").val()})
+                checkingForEndTheGame(true);
+            }
+        }
+
+        function startGame(){
+            socket.emit('startGameWithTheRoom',{roomNumber:$("#roomNumber").val()});
+            $("#startGame").val("Игра начата!")
+            $("#startGame").attr('disabled', true);
+            $("#roomNumber").attr('disabled', true);
+        }
+    </script>
+</body>
+</html>
